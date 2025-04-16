@@ -40,15 +40,28 @@ static int64_t power(int64_t base, int64_t exp)
     return result;
 }
 
-static int32_t portable_clzll(uint64_t x)
-{
-    if (x == 0) return 64;
-    int32_t n = 0;
-    while ((x & (1ULL << 63)) == 0)
-    {
-        n++;
-        x <<= 1;
+// static int32_t portable_clzll(uint64_t x)
+// {
+//     if (x == 0) return 64;
+//     int32_t n = 0;
+//     while ((x & (1ULL << 63)) == 0)
+//     {
+//         n++;
+//         x <<= 1;
+//     }
+//     return n;
+// }
+
+static int32_t __portable_clzll(uint64_t x) {
+    if (x == 0) {
+        return 64;
     }
+
+    int n = 0;
+    for (uint64_t mask = 1ULL << 63; !(x & mask); mask >>= 1) {
+        n++;
+    }
+
     return n;
 }
 
@@ -58,7 +71,7 @@ static int32_t get_bucket_index(struct hdr_histogram* h, int64_t value)
     int32_t pow2ceiling = 64 - __builtin_clzll(value | h->sub_bucket_mask); // smallest power of 2 containing value
                                                                             // #example: 0x0000000000000001 = 63
 #else
-    int32_t pow2ceiling = 64 - portable_clzll(value | h->sub_bucket_mask); // smallest power of 2 containing value
+    int32_t pow2ceiling = 64 - __portable_clzll(value | h->sub_bucket_mask); // smallest power of 2 containing value
                                                                             // #example: 0x0000000000000001 = 63
 #endif
     return pow2ceiling - h->unit_magnitude - (h->sub_bucket_half_count_magnitude + 1);
